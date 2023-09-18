@@ -1,99 +1,51 @@
-name: "Astro Deploy"
-description: "A composite action that prepares your Astro site to be deployed to GitHub Pages"
-branding:
-  icon: "box"
-  color: "orange"
-inputs:
-  path:
-    description: "Path of the directory containing your site"
-    required: false
-    default: "."
-  node-version:
-    description: "The node version to use"
-    required: false
-    default: "16"
-  package-manager:
-    description: "If not automatically detectable, you may specify your preferred package manager"
-    required: false
-    default: ""
-  npm-version:
-    description: "If package-manager is npm, use this specific version. Defaults to latest"
-    required: false
-    default: "7.x.x"
-  resolve-dep-from-path:
-    description: "If the dependency file is located inside the folder specified by path" 
-    type: boolean
-    required: false
-    default: true 
+name: Deploy Astro to GitHub Pages
 
-runs:
-  using: composite
-  steps:
-    - name: Check lockfiles
-      shell: "bash"
-      env:
-        INPUT_PM: ${{ inputs.package-manager }}
-      run: |
-        len=`echo $INPUT_PM | wc -c`
-        if [ $len -gt 1 ]; then
-            echo "PACKAGE_MANAGER=$INPUT_PM" >> $GITHUB_ENV
-        elif [ $(find "." -name "npm-lock.yaml") ]; then
-            echo "PACKAGE_MANAGER=npm" >> $GITHUB_ENV
-            echo "LOCKFILE=npm-lock.yaml" >> $GITHUB_ENV
-        elif [ $(find "." -name "yarn.lock") ]; then 
-            echo "PACKAGE_MANAGER=yarn" >> $GITHUB_ENV
-            echo "LOCKFILE=yarn.lock" >> $GITHUB_ENV
-        elif [ $(find "." -name "package-lock.json") ]; then 
-            echo "PACKAGE_MANAGER=npm" >> $GITHUB_ENV
-            echo "LOCKFILE=package-lock.json" >> $GITHUB_ENV
-        elif [ $(find "." -name "bun.lockb") ]; then 
-            echo "PACKAGE_MANAGER=bun" >> $GITHUB_ENV
-            echo "LOCKFILE=bun.lockb" >> $GITHUB_ENV
-        else
-            echo "No lockfile found.
-        Please specify your preferred \"package-manager\" in the action configuration."
-            exit 1
-        fi
-    - name: Setup NPM
-      if: ${{ env.PACKAGE_MANAGER == 'npm' }}
-      uses: npm/action-setup@v2.2.4
-      with:
-        version: ${{ inputs.npm-version }}
-    
-    - name: Setup Bun
-      if: ${{ env.PACKAGE_MANAGER == 'bun' }}
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: latest
+    on:
+     # Trigger the workflow every time you push to the `main` branch
+      push:
+        branches: [ main ]
+      # Allows you to run this workflow manually from the Actions tab on GitHub.
+      workflow_dispatch:
 
-    - name: Setup Node
-      uses: actions/setup-node@v3
-      if: inputs.resolve-dep-from-path == true 
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: ${{ env.PACKAGE_MANAGER }}
-        cache-dependency-path: "${{ inputs.path }}/${{ env.LOCKFILE }}"
+      # Allow this job to clone the repo and create a page deployment
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
-    - name: Setup Node
-      uses: actions/setup-node@v3
-      if: inputs.resolve-dep-from-path == false 
-      with:
-        node-version: ${{ inputs.node-version }}
-        cache: ${{ env.PACKAGE_MANAGER }}
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Check out your repository using git
+          uses: actions/checkout@v2
 
-    - name: Install
-      shell: "bash"
-      run: |
-        cd ${{ inputs.path }}
-        $PACKAGE_MANAGER install
+        - name: Use Node.js 16
+          uses: actions/setup-node@v2
+          with:
+            node-version: '16'
+            cache: 'npm'
 
-    - name: Build
-      shell: "bash"
-      run: |
-        cd ${{ inputs.path }}
-        $PACKAGE_MANAGER run build
+        # Not using npm? Change `npm ci` to `yarn install` or `pnpm i`
+        - name: Install dependencies
+          run: npm ci
 
-    - name: Upload Pages Artifact
-      uses: actions/upload-pages-artifact@v1
-      with:
-        path: "${{ inputs.path }}/dist/"
+        # Not using npm? Change `npm run build` to `yarn build` or `pnpm run build`
+        - name: Build Astro
+          run: npm run build --if-present
+
+        - name: Upload artifact
+          uses: actions/upload-pages-artifact@v1
+          with:
+            path: ./dist
+
+      deploy:
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+          - name: Deploy to GitHub Pages
+            id: deployment
+            uses: actions/deploy-pages@v1
