@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://dbcwicaksono.github.io/sitemap-index.xml

@@ -133,7 +133,7 @@ All commands are run from the root of the project, from a terminal:
 | :-------------------- | :------------------------------------------------- |
 | `npm install`         | Installs dependencies                              |
 | `npm run dev`         | Starts local dev server at `localhost:3000`        |
-| `npm run build`       | Build your production site to `./dist/`            |
+| `npm run build`       | Build your production site to `./docs/`            |
 | `npm run preview`     | Preview your build locally, before deploying       |
 | `npm run format`      | Format codes with Prettier                         |
 | `npm run lint:eslint` | Run Eslint                                         |
@@ -230,7 +230,7 @@ npm run build
 ```
 
 Now, your website is ready to be deployed. All generated files are located at
-`dist` folder, which you can deploy the folder to any hosting service you
+`docs` folder, which you can deploy the folder to any hosting service you
 prefer.
 
 #### Deploy to Netlify
