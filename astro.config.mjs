@@ -25,9 +25,8 @@ const whenExternalScripts = (items = []) =>
     : [];
 
 export default defineConfig({
-  site: SITE.site,
-  base: SITE.base,
-  trailingSlash: SITE.trailingSlash ? 'always' : 'never',
+  site: "https://dbcwicaksono.github.io",
+  base: "/biograph-i",
 
   output: 'static',
 
